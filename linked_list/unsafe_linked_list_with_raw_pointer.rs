@@ -174,28 +174,24 @@ impl LinkedList {
     pub fn insert(&mut self, index: usize, value: i32) -> bool {
         if index > self.length {
             return false;
-        }
-
-        if index == 0 {
+        } else if index == 0 {
             self.prepend(value);
             return true;
-        }
-
-        if index == self.length {
+        } else if index == self.length {
             self.append(value);
             return true;
+        } else {
+            let new_node = Node::new(value);
+            let temp = self.get(index - 1);
+
+            unsafe {
+                (*new_node).next = (*temp).next;
+                (*temp).next = new_node;
+            }
+
+            self.length += 1;
+            return true;
         }
-
-        let new_node = Node::new(value);
-        let temp = self.get(index - 1);
-
-        unsafe {
-            (*new_node).next = (*temp).next;
-            (*temp).next = new_node;
-        }
-
-        self.length += 1;
-        return true;
     }
 
     pub fn delete_node(&mut self, index: usize) {
@@ -288,14 +284,4 @@ fn main() {
     my_linked_list.delete_last();
     my_linked_list.delete_last();
     println!("{:?}", my_linked_list);
-}
-
-#[cfg(test)]
-mod test {
-    use crate::LinkedList;
-    use crate::Node;
-
-    fn test_basic() {
-        let mut linked_list = LinkedList::new(0);
-    }
 }
