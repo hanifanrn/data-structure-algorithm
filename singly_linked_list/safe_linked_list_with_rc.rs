@@ -1,5 +1,4 @@
-// safe linkedlist with ref count but a lot of clone
-
+// safe linkedlist with ref count
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -126,7 +125,7 @@ impl LinkedList {
         self.length -= 1;
     }
 
-    pub fn get(&self, index: usize) -> Result<Option<Link>, &'static str> {
+    pub fn get(&self, index: usize) -> Option<Link> {
         match self.length as isize - index as isize {
             0.. => {
                 let mut temp = self.head.clone();
@@ -134,9 +133,9 @@ impl LinkedList {
                 for _i in 0..index {
                     temp = temp.clone().unwrap().borrow().next.clone();
                 }
-                return Ok(temp);
+                return temp;
             }
-            _ => return Err("index out of bound"),
+            _ => return None,
         }
     }
 
@@ -144,11 +143,11 @@ impl LinkedList {
         let temp = self.get(index);
 
         match temp {
-            Ok(mut node) => {
-                node.as_mut().unwrap().borrow_mut().value = value;
+            Some(node) => {
+                node.borrow_mut().value = value;
                 return true;
             }
-            Err(_) => {
+            None => {
                 return false;
             }
         }
@@ -165,10 +164,10 @@ impl LinkedList {
             return true;
         } else {
             let new_node = Node::new(value);
-            let mut temp = self.get(index - 1).unwrap();
+            let temp = self.get(index - 1);
 
             new_node.borrow_mut().next = temp.as_ref().unwrap().borrow().next.clone();
-            temp.as_mut().unwrap().borrow_mut().next = Some(new_node);
+            temp.unwrap().borrow_mut().next = Some(new_node);
 
             self.length += 1;
             return true;
@@ -176,14 +175,14 @@ impl LinkedList {
     }
 
     pub fn delete_node(&mut self, index: usize) {
-        if index > self.length {
+        if index >= self.length {
             return;
         } else if index == 0 {
             self.delete_first();
-        } else if index == self.length {
+        } else if index == self.length - 1 {
             self.delete_last();
         } else {
-            let mut prev = self.get(index - 1).unwrap();
+            let mut prev = self.get(index - 1);
             let temp = prev.as_ref().unwrap().borrow().next.clone();
             prev.as_mut().unwrap().borrow_mut().next = temp;
 
@@ -220,11 +219,6 @@ fn main() {
     my_linked_list.delete_last();
     my_linked_list.prepend(0);
     println!("{:#?}", my_linked_list);
-    let first_node = my_linked_list.get(1);
-    match first_node {
-        Ok(v) => println!("{:#?}", v.unwrap()),
-        Err(e) => println!("{:?}", e),
-    }
 
     println!("change index 0 to 9");
     let set_0 = my_linked_list.set(0, 9);
@@ -244,18 +238,152 @@ fn main() {
 
 #[cfg(test)]
 mod test {
-    use crate::{LinkedList, Node};
+    use crate::LinkedList;
 
     #[test]
-    fn delete_node_test() {
-        let mut linked_list = LinkedList::new(0);
-        linked_list.append(1);
-        linked_list.append(2);
-        linked_list.append(3);
+    fn append_test() {
+        let mut ll = LinkedList::new(0);
+        ll.append(1);
+        assert_eq!(0, ll.head.clone().unwrap().borrow().value);
+        assert_eq!(1, ll.tail.clone().unwrap().borrow().value);
+        ll.append(2);
+        assert_eq!(2, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(3, ll.length);
+    }
 
-        // delete index 2
-        linked_list.delete_node(2);
-        // check length
-        assert_eq!(linked_list.length, 3);
+    #[test]
+    fn delete_last_test() {
+        let mut ll = LinkedList::new(0);
+        ll.delete_last();
+        assert_eq!(false, ll.head.is_some());
+        assert_eq!(false, ll.tail.is_some());
+        ll.delete_last();
+        assert_eq!(false, ll.head.is_some());
+        assert_eq!(false, ll.tail.is_some());
+        ll.append(1);
+        ll.append(2);
+        ll.append(3);
+        assert_eq!(3, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(3, ll.length);
+        ll.delete_last();
+        assert_eq!(2, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(2, ll.length);
+    }
+
+    #[test]
+    fn prepend_test() {
+        let mut ll = LinkedList::new(0);
+        ll.prepend(-1);
+        assert_eq!(-1, ll.head.clone().unwrap().borrow().value);
+        assert_eq!(0, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(2, ll.length);
+    }
+
+    #[test]
+    fn delete_first_test() {
+        let mut ll = LinkedList::new(0);
+        ll.delete_first();
+        assert_eq!(false, ll.head.is_some());
+        assert_eq!(false, ll.tail.is_some());
+        ll.delete_first();
+        assert_eq!(false, ll.head.is_some());
+        assert_eq!(false, ll.tail.is_some());
+        ll.append(1);
+        ll.append(2);
+        ll.append(3);
+        assert_eq!(3, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(3, ll.length);
+        ll.delete_first();
+        assert_eq!(2, ll.head.clone().unwrap().borrow().value);
+        assert_eq!(3, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(2, ll.length);
+    }
+
+    #[test]
+    fn get_test() {
+        let mut ll = LinkedList::new(0);
+        ll.append(1);
+        ll.append(2);
+        assert_eq!(3, ll.length);
+        let first_node = ll.get(0);
+        let second_node = ll.get(1);
+        let last_node = ll.get(2);
+        let out_of_index_node = ll.get(3);
+        assert_eq!(0, first_node.unwrap().borrow().value);
+        assert_eq!(1, second_node.unwrap().borrow().value);
+        assert_eq!(2, last_node.unwrap().borrow().value);
+        assert_eq!(false, out_of_index_node.is_some());
+    }
+
+    #[test]
+    fn set_test() {
+        let mut ll = LinkedList::new(0);
+        ll.append(1);
+        ll.append(2);
+        assert_eq!(3, ll.length);
+        let set_first_node = ll.set(0, 9);
+        let set_out_of_index_node = ll.set(3, 9);
+        assert_eq!(true, set_first_node);
+        assert_eq!(false, set_out_of_index_node);
+    }
+
+    #[test]
+    fn insert_test() {
+        let mut ll = LinkedList::new(0);
+        ll.delete_last();
+        assert_eq!(0, ll.length);
+        let insert_zero = ll.insert(0, 0);
+        assert_eq!(true, insert_zero);
+        assert_eq!(1, ll.length);
+        assert_eq!(0, ll.head.clone().unwrap().borrow().value);
+        assert_eq!(0, ll.tail.clone().unwrap().borrow().value);
+        let insert_first_node = ll.insert(0, -1);
+        let insert_last_node = ll.insert(2, 1);
+        let insert_out_of_index_node = ll.insert(4, 1);
+        assert_eq!(true, insert_first_node);
+        assert_eq!(true, insert_last_node);
+        assert_eq!(false, insert_out_of_index_node);
+    }
+
+    #[test]
+    fn delete_index_test() {
+        let mut ll = LinkedList::new(0);
+        ll.delete_node(0);
+        assert_eq!(false, ll.head.is_some());
+        assert_eq!(false, ll.tail.is_some());
+        ll.delete_node(0);
+        assert_eq!(false, ll.head.is_some());
+        assert_eq!(false, ll.tail.is_some());
+        ll.append(1);
+        ll.append(2);
+        ll.append(3);
+        assert_eq!(3, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(3, ll.length);
+        ll.delete_node(3);
+        assert_eq!(1, ll.head.clone().unwrap().borrow().value);
+        assert_eq!(3, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(3, ll.length);
+        ll.delete_node(2);
+        assert_eq!(1, ll.head.clone().unwrap().borrow().value);
+        assert_eq!(2, ll.tail.clone().unwrap().borrow().value);
+        assert_eq!(2, ll.length);
+    }
+    #[test]
+    fn reverse_test() {
+        let mut ll = LinkedList::new(0);
+        ll.append(1);
+        ll.append(2);
+        ll.append(3);
+        ll.reverse();
+        let first_node = ll.get(0);
+        let second_node = ll.get(1);
+        let third_node = ll.get(2);
+        let last_node = ll.get(3);
+        assert_eq!(3, first_node.unwrap().borrow().value);
+        assert_eq!(2, second_node.unwrap().borrow().value);
+        assert_eq!(1, third_node.unwrap().borrow().value);
+        assert_eq!(0, last_node.unwrap().borrow().value);
+        assert_eq!(3, ll.head.clone().unwrap().borrow().value);
+        assert_eq!(0, ll.tail.clone().unwrap().borrow().value);
     }
 }
