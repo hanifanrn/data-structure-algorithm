@@ -87,6 +87,21 @@ impl Stack {
     }
 }
 
+fn main() {
+    let mut my_stack = Stack::new(1);
+    my_stack.get_top();
+    my_stack.get_height();
+    my_stack.print_stack();
+    my_stack.is_empty();
+    my_stack.push(2);
+    let top_value = my_stack.top_value();
+    println!("top value: {}", top_value.unwrap());
+    println!("this is stack: {:#?}", my_stack);
+    println!("first pop: {}", my_stack.pop().unwrap());
+    println!("second pop: {}", my_stack.pop().unwrap());
+    println!("third pop: {}", my_stack.pop()unwrap());
+}
+
 #[cfg(test)]
 mod test {
     use crate::Stack;
@@ -117,19 +132,4 @@ mod test {
         assert_eq!(2, my_stack.pop().unwrap());
         assert_eq!(1, my_stack.pop().unwrap());
     }
-}
-
-fn main() {
-    let mut my_stack = Stack::new(1);
-    my_stack.get_top();
-    my_stack.get_height();
-    my_stack.print_stack();
-    my_stack.is_empty();
-    my_stack.push(2);
-    let top_value = my_stack.top_value();
-    println!("top value: {}", top_value.unwrap());
-    println!("this is stack: {:#?}", my_stack);
-    println!("first pop: {}", my_stack.pop().unwrap());
-    println!("second pop: {}", my_stack.pop().unwrap());
-    println!("third pop: {}", my_stack.pop()unwrap());
 }
